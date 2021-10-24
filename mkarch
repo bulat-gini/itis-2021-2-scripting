@@ -1,0 +1,49 @@
+#!/bin/bash
+# Задание 2
+# Самораспаковывающийся архив
+# Author: Bulat Giniyatullin
+
+while getopts "d:n:" OPT; do
+  case "$OPT" in
+    d)
+      declare -r SOURCE="$OPTARG"
+      ;;
+    n)
+      declare -r TARGET="$OPTARG"
+      ;;
+    *)
+      exit 1
+      ;;
+  esac
+done
+if [ -z "$SOURCE" ]; then
+  echo "dir_path is unset"
+  exit 1
+elif [ -z "$TARGET" ]; then
+  echo "target name is unset"
+  exit 1
+fi
+(
+cat <<EOF
+#!/bin/bash
+while getopts "o:" OPT; do
+  case "\$OPT" in
+    o)
+      declare UNPACKDIR="\$OPTARG";
+      ;;
+    *)
+      exit 1
+      ;;
+  esac
+done
+if [ -z "\$UNPACKDIR" ]; then
+  UNPACKDIR="."
+fi
+(
+cat <<EOFI
+$(tar -c "$SOURCE" | gzip -c | base64)
+EOFI
+) | base64 -d | gzip -d | tar -xC "\$UNPACKDIR"
+EOF
+) >"$TARGET"
+chmod +x "$TARGET"
