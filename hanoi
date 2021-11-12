@@ -1,0 +1,130 @@
+#!/bin/bash
+# Задание 3
+# Ханойская башня
+# Author: Bulat Giniyatullin
+
+function put() {
+    declare -n stack="$1"
+    elem="$2"
+    stack["${#stack[@]}"]="$elem"
+}
+
+function pop() {
+    declare -n stack="$1"
+    if [ ${#stack[@]} -gt 0 ]; then
+      POPPED="${stack[${#stack[@]}-1]}"
+      unset "stack[${#stack[@]}-1]"
+      return 0
+    fi
+    return 1
+}
+
+function get() {
+    declare -n stack="$1"
+    if [ ${#stack[@]} -gt 0 ]; then
+      GOT="${stack[${#stack[@]}-1]}"
+      return 0
+    fi
+    return 1
+}
+
+function stepCheck() {
+    from="${PREFIX}$1"
+    to="${PREFIX}$2"
+    if get "$from"; then
+      gotFrom="$GOT"
+    else
+      return 1
+    fi
+    if get "$to"; then
+      gotTo="$GOT"
+    else
+      return 0
+    fi
+    [ "$gotTo" -ge "$gotFrom" ]
+    return $?
+}
+
+function step() {
+    from="${PREFIX}$1"
+    to="${PREFIX}$2"
+    if pop "$from"; then
+      put "$to" "$POPPED"
+    fi
+}
+
+function checkInput() {
+    input=("$@")
+    if [ "${#input[@]}" -ne 2 ]; then
+      return 1
+    else
+      for elem in "${input[@]}" ; do
+        [[ "$elem" -le 3 && "$elem" -ge 1 ]] 2>/dev/null
+        if [ $? -eq 1 ]; then
+          return 1
+        fi
+      done
+    fi
+    return 0
+}
+
+function isEndGame() {
+    for i in {2..3} ; do
+        declare stack_name="${PREFIX}$i"
+        if equals "REFERENCE_STACK" $stack_name; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function printField() {
+    for i in {1..3} ; do
+        declare -n cur="${PREFIX}$i"
+        echo "${i}) ${cur[@]}"
+    done
+}
+
+function equals() {
+    declare -n left="$1"
+    declare -n right="$2"
+    if [ ${#left[@]} -ne ${#right[@]} ]; then
+        return 1
+    fi
+    for i in seq 1 ${#left[@]}; do
+        if [[ ${#left[${i}]} -ne ${#right[${i}]} ]]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+declare -r PREFIX="stack"
+declare -ra REFERENCE_STACK=(8 7 6 5 4 3 2 1)
+declare -a stack1=("${REFERENCE_STACK[@]}")
+declare -a stack2
+declare -a stack3
+
+declare -i STEP=0
+while : ; do
+  printField
+  while : ; do
+    echo -n "Ход № $STEP (откуда, куда): "
+    read -ra INPUT
+    if [ "${#INPUT[@]}" -eq 1 ] && [ "${INPUT[0]}" = "q" ]; then
+      exit 0
+    elif ! checkInput "${INPUT[@]}" || ! stepCheck "${INPUT[@]}"; then
+      echo "Неверный ход! Повторите!"
+      continue
+    else
+      break
+    fi
+  done
+  step "${INPUT[@]}"
+  if isEndGame ; then
+    printField
+    echo "Победа!"
+    exit 0
+  fi
+  STEP=$((STEP+1))
+done
