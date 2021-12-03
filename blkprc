@@ -51,6 +51,15 @@ function next_file() {
     return 1
 }
 
+function signals_aware_wait() {
+    wait -n
+    wait_status=$?
+    while [ $wait_status -gt 127 ]; do
+      wait -n
+      wait_status=$?
+    done
+}
+
 declare -r path="$dirpath/$mask"
 declare -a files=( $path )
 file_count=${#files[@]}
@@ -62,7 +71,7 @@ for _ in $(seq 1 $min); do
     eval $command $NEXT_FILE &
 done
 while : ; do
-  wait -n
+  signals_aware_wait
   LEFT_COUNT=$((LEFT_COUNT-1))
   PROCESSED_COUNT=$((PROCESSED_COUNT+1))
   if [ ${#files[@]} -gt 0 ]; then
